@@ -1,0 +1,45 @@
+name: Assemble Xiuxian V3.2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/assemble-xiuxian-v32.yml'
+      - 'xiuxian-game/v32c*.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Assemble single-file game
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat xiuxian-game/v32c{0..7}.txt > xiuxian-game/index.html
+          grep -q 'V3.2 · 凡人流万象事件' xiuxian-game/index.html
+          grep -q 'storyEncounterData' xiuxian-game/index.html
+          grep -q '</script></body></html>' xiuxian-game/index.html
+          test "$(wc -c < xiuxian-game/index.html)" -gt 60000
+
+      - name: Commit assembled index
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- xiuxian-game/index.html; then
+            echo 'index.html already up to date'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add xiuxian-game/index.html
+          git commit -m 'Deploy Xiuxian V3.2 as single-file page [skip ci]'
+          git push origin HEAD:main
