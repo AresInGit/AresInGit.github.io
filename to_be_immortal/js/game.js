@@ -15,6 +15,7 @@ const CHAPTER_REGIONS = [
   ["大晋", "昆吾山"],
   ["小极宫"],
 ];
+const ENEMY_PORTRAITS = ["mortal", "demonic", "sea", "ancient-demon", "silver-wing", "space"];
 let state = null;
 let modal = null;
 let toastTimer = 0;
@@ -87,6 +88,7 @@ function defaultState() {
     flags: {},
     currentEvent: "normal-1",
     recentEvents: [],
+    recentFamilies: [],
     outcome: null,
     log: ["离开青牛镇，踏上七玄门的山路。"],
     mapRow: 0,
@@ -148,6 +150,24 @@ function realmText() {
   return `${realm.name} · ${realm.stages[state.stage] || realm.stages.at(-1)}`;
 }
 
+function currentRealmNeed() {
+  const base = REALMS[state.realm].need;
+  return Math.round(base * (1 + state.stage * .45));
+}
+
+function breakthroughCost() {
+  return {
+    pill: 1 + Math.floor(state.realm / 2) + Math.floor(state.stage / 2),
+    stones: 8 + state.realm * 12 + state.stage * 5,
+    years: 1 + state.realm * .75 + state.stage * .35,
+  };
+}
+
+function breakthroughChance() {
+  const hard = state.talents.some((talent) => talent.effect === "hard") ? 12 : 0;
+  return Math.round(clamp(62 + state.intel * 1.3 + state.caution * .7 - state.realm * 7 - state.stage * 3.5 - hard, 22, 84));
+}
+
 function requirementMet(requirement = {}) {
   return Object.entries(requirement).every(([key, value]) => Number(state[key] ?? state.flags?.[key] ?? 0) >= Number(value));
 }
@@ -201,9 +221,13 @@ function selectEvent(kind = "event") {
   if (roll < 0.025 && eligibleEvents(corpus.hidden).length) pool = corpus.hidden;
   const chainPool = eligibleEvents(corpus.chains);
   if (chainPool.length && Math.random() < 0.16) pool = chainPool;
-  const event = chooseWeighted(eligibleEvents(pool));
+  const eligible = eligibleEvents(pool);
+  const unseenFamilies = eligible.filter((event) => !state.recentFamilies.includes(event.family));
+  const relaxedFamilies = eligible.filter((event) => !state.recentFamilies.slice(0, 5).includes(event.family));
+  const event = chooseWeighted(unseenFamilies.length ? unseenFamilies : relaxedFamilies.length ? relaxedFamilies : eligible);
   state.currentEvent = event.id;
-  state.recentEvents = [event.id, ...state.recentEvents.filter((id) => id !== event.id)].slice(0, 14);
+  state.recentEvents = [event.id, ...state.recentEvents.filter((id) => id !== event.id)].slice(0, 30);
+  state.recentFamilies = [event.family, ...state.recentFamilies.filter((family) => family !== event.family)].slice(0, 12);
   state.phase = "event";
   state.outcome = null;
   state.adventures += 1;
@@ -254,7 +278,7 @@ function renderTopbar() {
 }
 
 function renderLeftRail() {
-  const realmNeed = REALMS[state.realm].need;
+  const realmNeed = currentRealmNeed();
   return `
     <aside class="left-rail panel">
       <h2 class="panel-title">人界纪行 <small>${state.chapter + 1} / ${CHAPTERS.length}</small></h2>
@@ -320,7 +344,7 @@ function renderMap() {
         const locked = node.row !== state.mapRow || node.visited;
         return `<button class="node ${locked ? "locked" : ""} ${node.type === "boss" ? "boss" : ""}" style="grid-column:${node.col + 1};grid-row:${node.row + 1}" data-node="${node.id}" ${locked ? "disabled" : ""}><span>${nodeLabel[node.type]}</span></button>`;
       }).join("")}</div>
-      <p style="text-align:center;color:#777260;font-size:12px">情报能增加稀有事件出现率；最近经历过的事件权重降低 90%。</p>
+      <p style="text-align:center;color:#777260;font-size:12px">情报能增加稀有事件出现率；同类事件会进入 12 次见闻冷却。</p>
     </div></section>`;
 }
 
@@ -416,12 +440,12 @@ function caveEvent() {
 
 function enemyFor(kind) {
   const names = [
-    ["七玄门叛徒", "山中妖狼", "墨府刺客"],
-    ["鬼灵门修士", "血色妖藤", "筑基散修"],
-    ["深海妖兽", "极阴门人", "风雷妖禽"],
-    ["慕兰法士", "坠魔谷古兽", "古魔残影"],
-    ["阴罗宗长老", "银翅夜叉", "昆吾禁卫"],
-    ["空间异兽", "古魔化身", "界面风暴"],
+    ["七玄门叛徒", "蒙面散修", "墨府刺客"],
+    ["鬼灵门修士", "血灵门徒", "魔道散修"],
+    ["深海妖兽", "海渊蛇妖", "外星海妖兽"],
+    ["坠魔谷古兽", "古魔残影", "魔气化身"],
+    ["银翅夜叉", "昆吾夜妖", "阴罗宗护法"],
+    ["空间异兽", "虚空兽影", "界面风暴化身"],
   ];
   const mult = kind === "boss" ? 2.15 : kind === "elite" ? 1.45 : 1;
   const maxHp = Math.round((26 + state.realm * 26 + state.chapter * 8) * mult);
@@ -440,6 +464,7 @@ function enemyFor(kind) {
     maxHp,
     damage: Math.round((5 + state.realm * 4 + state.chapter * 1.4) * (kind === "elite" ? 1.25 : 1)),
     kind,
+    portrait: ENEMY_PORTRAITS[state.chapter],
     turn: 1,
     intent: "attack",
     realmDiff: kind === "elite" && state.chapter > state.realm ? 2 : kind === "boss" ? 1 : 0,
@@ -487,9 +512,10 @@ function drawCards(count) {
 function renderBattle() {
   const b = state.battle;
   const e = b.enemy;
+  const portrait = e.portrait || ENEMY_PORTRAITS[state.chapter];
   app.innerHTML = `<main class="battle paper-noise">
     <div class="battle-head"><div><p class="location">${CHAPTERS[state.chapter].location} · ${e.kind === "boss" ? "劫关" : "斗法"}</p><h2>${realmText()}</h2></div><button class="ink-btn" data-action="flee">尝试逃遁</button></div>
-    <section class="enemy"><div class="enemy-mark">${e.kind === "boss" ? "劫" : "敌"}</div><h1>${e.name}</h1><div class="hpbar"><i style="width:${clamp(e.hp / e.maxHp * 100, 0, 100)}%"></i></div><p>${e.hp} / ${e.maxHp}</p><div class="intent">${e.realmDiff >= 2 ? "此人气息深不可测 · " : ""}意图：下回合造成 ${e.damage} 点伤害${e.mechanic ? `<br>机制【${e.mechanic}】${e.mechanicText}` : ""}</div></section>
+    <section class="enemy"><div class="enemy-portrait portrait-${portrait} ${e.kind === "boss" ? "boss" : ""}" role="img" aria-label="${e.name}的水墨对手立绘"><span>${e.kind === "boss" ? "劫" : "敌"}</span></div><h1>${e.name}</h1><div class="hpbar"><i style="width:${clamp(e.hp / e.maxHp * 100, 0, 100)}%"></i></div><p>${e.hp} / ${e.maxHp}</p><div class="intent">${e.realmDiff >= 2 ? "此人气息深不可测 · " : ""}意图：下回合造成 ${e.damage} 点伤害${e.mechanic ? `<br>机制【${e.mechanic}】${e.mechanicText}` : ""}</div></section>
     <div class="battle-center"><p>${b.message}</p></div>
     <section class="hand">${b.hand.map((id, index) => {
       const card = getCard(id); const disabled = card.cost > b.energy || (card.mind || 0) > b.mind || (card.stones || 0) > state.stones;
@@ -597,7 +623,7 @@ function winBattle() {
   const elite = b.enemy.kind === "elite";
   const reward = boss ? 28 + state.chapter * 12 : elite ? 16 : 7;
   state.stones += reward;
-  state.cultivation += boss ? 24 : elite ? 13 : 7;
+  state.cultivation += boss ? 18 : elite ? 9 : 4;
   state.hp = Math.max(1, b.playerHp);
   state.mind = b.mind;
   state.kills += 1;
@@ -649,10 +675,18 @@ function renderModal() {
   }
   if (modal === "bag") return wrap("背包", `<div class="modal-grid">${[["灵石", state.stones], ["灵药", state.herbs], ["丹药", state.pill], ["灵材", state.materials], ["绿液", state.green], ["情报", state.intel]].map(([name, value]) => `<article class="card-item"><h3>${name}</h3><p>现有 ${value}</p></article>`).join("")}</div>`);
   if (modal === "relics") return wrap("法宝", `<div class="modal-grid">${state.relics.map((name) => `<article class="card-item"><h3>${name}</h3><p>${name === "掌天瓶" ? "积蓄绿液，催熟灵药。暴露此物可能招来杀身之祸。" : "已祭炼的随身宝物。"}</p></article>`).join("")}</div>`);
-  if (modal === "techniques") return wrap("功法与突破", `<div class="modal-grid">${state.techniques.map((name) => `<article class="card-item"><h3>${name}</h3><p>当前境界：${realmText()}</p></article>`).join("")}</div><div class="save-actions"><button class="ink-btn primary" data-action="breakthrough">尝试突破</button><span style="font-size:12px;align-self:center">修为 ${state.cultivation} / ${REALMS[state.realm].need} · 需要丹药 1</span></div>`);
+  if (modal === "techniques") {
+    const cost = breakthroughCost();
+    const ready = state.cultivation >= currentRealmNeed() && state.pill >= cost.pill && state.stones >= cost.stones;
+    return wrap("功法与突破", `<div class="modal-grid">${state.techniques.map((name) => `<article class="card-item"><h3>${name}</h3><p>当前境界：${realmText()}</p></article>`).join("")}</div><div class="breakthrough-note"><strong>破境准备</strong><span>修为 ${state.cultivation} / ${currentRealmNeed()}</span><span>丹药 ${state.pill} / ${cost.pill}</span><span>灵石 ${state.stones} / ${cost.stones}</span><span>预计耗时 ${ageText(cost.years).replace("岁", "年")}</span><span>成功率约 ${breakthroughChance()}%</span></div><div class="save-actions"><button class="ink-btn primary" data-action="breakthrough" ${ready ? "" : "disabled"}>尝试突破</button><small>失败会损失三成修为并遭受气血反噬。</small></div>`);
+  }
   if (modal === "beasts") return wrap("灵兽灵虫", `<div class="modal-grid"><article class="card-item"><h3>${state.insect ? "噬金虫群" : "尚未契约"}</h3><p>${state.insect ? `培育阶段 ${state.insect}，长期成长可解锁虫修卡牌。` : "探索灵田、秘境与拍卖会，可能获得灵兽线索。"}</p></article></div>`);
   if (modal === "people") return wrap("人物因果", `<div class="modal-grid">${Object.entries(state.relations).map(([name, value]) => `<article class="card-item"><h3>${name}</h3><p>关系 ${value} · 记忆会跨章节保留</p></article>`).join("")}</div>`);
-  if (modal === "cave") return wrap("洞府", `<div class="modal-grid"><article class="card-item"><h3>闭关吐纳</h3><p>消耗 1 年，修为 +18。</p><button class="ink-btn" data-cave="cultivate">闭关</button></article><article class="card-item"><h3>掌天瓶催熟</h3><p>消耗绿液 1，灵药 +4。</p><button class="ink-btn" data-cave="grow" ${state.green < 1 ? "disabled" : ""}>催熟</button></article><article class="card-item"><h3>炼制定气丹</h3><p>消耗灵药 2、灵石 4，丹药 +1。</p><button class="ink-btn" data-cave="pill" ${state.herbs < 2 || state.stones < 4 ? "disabled" : ""}>开炉</button></article><article class="card-item"><h3>静养伤势</h3><p>消耗 6 月，生命恢复至上限。</p><button class="ink-btn" data-cave="heal">静养</button></article></div>`);
+  if (modal === "cave") {
+    const cultivateGain = 11 + state.realm * 2;
+    const cultivateYears = 1.25 + state.realm * .25;
+    return wrap("洞府", `<div class="modal-grid"><article class="card-item"><h3>闭关吐纳</h3><p>消耗 ${cultivateYears} 年，修为 +${cultivateGain}。</p><button class="ink-btn" data-cave="cultivate">闭关</button></article><article class="card-item"><h3>掌天瓶催熟</h3><p>消耗绿液 1，灵药 +4。</p><button class="ink-btn" data-cave="grow" ${state.green < 1 ? "disabled" : ""}>催熟</button></article><article class="card-item"><h3>炼制定气丹</h3><p>消耗灵药 3、灵石 6，丹药 +1。</p><button class="ink-btn" data-cave="pill" ${state.herbs < 3 || state.stones < 6 ? "disabled" : ""}>开炉</button></article><article class="card-item"><h3>静养伤势</h3><p>消耗 6 月，生命恢复至上限。</p><button class="ink-btn" data-cave="heal">静养</button></article></div>`);
+  }
   if (modal === "save") return wrap("存档", `<p style="font-size:13px;line-height:1.8">每次选择后自动保存到当前浏览器。也可导出文本，在其他设备导入。</p><div class="save-actions"><button class="ink-btn" data-action="export">导出存档</button><button class="ink-btn" data-action="import">导入存档</button><button class="ink-btn" data-action="restart">重新开局</button></div><textarea class="code-area" id="save-code" placeholder="导出的存档会显示在这里；粘贴存档后点击导入。"></textarea>`);
   if (modal === "meta") {
     const meta = getMeta();
@@ -662,9 +696,9 @@ function renderModal() {
 }
 
 function caveAction(action) {
-  if (action === "cultivate") { addTime(1); state.cultivation += 18; log("闭关一年，修为有所精进。"); }
+  if (action === "cultivate") { const years = 1.25 + state.realm * .25; const gain = 11 + state.realm * 2; addTime(years); state.cultivation += gain; log(`闭关 ${years} 年，修为增加 ${gain}。`); }
   if (action === "grow" && state.green >= 1) { state.green -= 1; state.herbs += 4; addTime(.2); log("以绿液催熟四株灵药。"); }
-  if (action === "pill" && state.herbs >= 2 && state.stones >= 4) { state.herbs -= 2; state.stones -= 4; state.pill += 1; state.alchemy += 1; addTime(.25); log("开炉炼成一枚定气丹。"); }
+  if (action === "pill" && state.herbs >= 3 && state.stones >= 6) { state.herbs -= 3; state.stones -= 6; state.pill += 1; state.alchemy += 1; addTime(.25); log("开炉炼成一枚定气丹。"); }
   if (action === "heal") { addTime(.5); state.hp = state.maxHp; state.mind = state.maxMind; log("静养半年，伤势尽复。"); }
   save();
   render();
@@ -672,13 +706,15 @@ function caveAction(action) {
 
 function breakthrough() {
   const realm = REALMS[state.realm];
-  if (state.cultivation < realm.need || state.pill < 1) return showToast("修为或丹药不足");
-  state.pill -= 1;
-  addTime(1 + state.realm);
-  const hard = state.talents.some((t) => t.effect === "hard") ? 12 : 0;
-  const chance = clamp(72 + state.intel * 2 + state.caution - state.realm * 8 - hard, 28, 92);
+  const need = currentRealmNeed();
+  const cost = breakthroughCost();
+  if (state.cultivation < need || state.pill < cost.pill || state.stones < cost.stones) return showToast("修为、丹药或灵石不足");
+  state.pill -= cost.pill;
+  state.stones -= cost.stones;
+  addTime(cost.years);
+  const chance = breakthroughChance();
   if (Math.random() * 100 <= chance) {
-    state.cultivation -= realm.need;
+    state.cultivation -= need;
     state.stage += 1;
     state.breakthroughs += 1;
     if (state.stage >= realm.stages.length) {
@@ -697,10 +733,11 @@ function breakthrough() {
     log(`突破成功，踏入${realmText()}。`);
     showToast("破境成功");
   } else {
-    const loss = Math.ceil(realm.need * .22);
+    const loss = Math.ceil(need * .3);
     state.cultivation = Math.max(0, state.cultivation - loss);
-    state.hp = Math.max(1, state.hp - (8 + state.realm * 5));
-    log(`突破失败，修为倒退 ${loss}，丹药尽毁。`);
+    state.hp = Math.max(1, state.hp - (12 + state.realm * 7));
+    state.mind = Math.max(0, state.mind - 1);
+    log(`突破失败，修为倒退 ${loss}，丹药与灵石尽毁。`);
     showToast("破境失败，气血反噬");
   }
   modal = null;

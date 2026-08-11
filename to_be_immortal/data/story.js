@@ -8,11 +8,11 @@ export const CHAPTERS = [
 ];
 
 export const REALMS = [
-  { name: "炼气期", lifespan: 105, stages: ["一层", "三层", "六层", "九层", "十三层"], need: 42 },
-  { name: "筑基期", lifespan: 235, stages: ["初期", "中期", "后期", "大圆满"], need: 90 },
-  { name: "结丹期", lifespan: 520, stages: ["初期", "中期", "后期", "大圆满"], need: 170 },
-  { name: "元婴期", lifespan: 1050, stages: ["初期", "中期", "后期", "大圆满"], need: 310 },
-  { name: "化神期", lifespan: 2100, stages: ["初期", "中期", "后期"], need: 520 },
+  { name: "炼气期", lifespan: 105, stages: ["一层", "三层", "六层", "九层", "十三层"], need: 60 },
+  { name: "筑基期", lifespan: 235, stages: ["初期", "中期", "后期", "大圆满"], need: 160 },
+  { name: "结丹期", lifespan: 520, stages: ["初期", "中期", "后期", "大圆满"], need: 350 },
+  { name: "元婴期", lifespan: 1050, stages: ["初期", "中期", "后期", "大圆满"], need: 720 },
+  { name: "化神期", lifespan: 2100, stages: ["初期", "中期", "后期"], need: 1250 },
 ];
 
 export const TALENTS = [
