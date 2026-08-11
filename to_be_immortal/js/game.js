@@ -168,6 +168,10 @@ function breakthroughChance() {
   return Math.round(clamp(62 + state.intel * 1.3 + state.caution * .7 - state.realm * 7 - state.stage * 3.5 - hard, 22, 84));
 }
 
+function chapterRealmGap(chapter = state.chapter) {
+  return Math.max(0, CHAPTERS[chapter].realm - state.realm);
+}
+
 function requirementMet(requirement = {}) {
   return Object.entries(requirement).every(([key, value]) => Number(state[key] ?? state.flags?.[key] ?? 0) >= Number(value));
 }
@@ -448,7 +452,10 @@ function enemyFor(kind) {
     ["空间异兽", "虚空兽影", "界面风暴化身"],
   ];
   const mult = kind === "boss" ? 2.15 : kind === "elite" ? 1.45 : 1;
-  const maxHp = Math.round((26 + state.realm * 26 + state.chapter * 8) * mult);
+  const realmGap = chapterRealmGap();
+  const pressureHp = 1 + realmGap * .22;
+  const pressureDamage = 1 + realmGap * .18;
+  const maxHp = Math.round((26 + state.realm * 26 + state.chapter * 8) * mult * pressureHp);
   const chapterBosses = ["墨大夫", "王蝉", "极阴祖师", "古魔", "元刹圣祖分身", "空间风暴"];
   const mechanics = [
     ["夺舍", "每 3 回合侵蚀 1 点神识；神识归零时伤害大增。"],
@@ -462,12 +469,13 @@ function enemyFor(kind) {
     name: kind === "boss" ? chapterBosses[state.chapter] : pick(names[state.chapter]),
     hp: maxHp,
     maxHp,
-    damage: Math.round((5 + state.realm * 4 + state.chapter * 1.4) * (kind === "elite" ? 1.25 : 1)),
+    damage: Math.round((5 + state.realm * 4 + state.chapter * 1.4) * (kind === "elite" ? 1.25 : 1) * pressureDamage),
     kind,
     portrait: ENEMY_PORTRAITS[state.chapter],
     turn: 1,
     intent: "attack",
-    realmDiff: kind === "elite" && state.chapter > state.realm ? 2 : kind === "boss" ? 1 : 0,
+    realmGap,
+    realmDiff: realmGap + (kind === "elite" || kind === "boss" ? 1 : 0),
     mechanic: kind === "boss" ? mechanics[state.chapter][0] : null,
     mechanicText: kind === "boss" ? mechanics[state.chapter][1] : null,
   };
@@ -515,7 +523,7 @@ function renderBattle() {
   const portrait = e.portrait || ENEMY_PORTRAITS[state.chapter];
   app.innerHTML = `<main class="battle paper-noise">
     <div class="battle-head"><div><p class="location">${CHAPTERS[state.chapter].location} · ${e.kind === "boss" ? "劫关" : "斗法"}</p><h2>${realmText()}</h2></div><button class="ink-btn" data-action="flee">尝试逃遁</button></div>
-    <section class="enemy"><div class="enemy-portrait portrait-${portrait} ${e.kind === "boss" ? "boss" : ""}" role="img" aria-label="${e.name}的水墨对手立绘"><span>${e.kind === "boss" ? "劫" : "敌"}</span></div><h1>${e.name}</h1><div class="hpbar"><i style="width:${clamp(e.hp / e.maxHp * 100, 0, 100)}%"></i></div><p>${e.hp} / ${e.maxHp}</p><div class="intent">${e.realmDiff >= 2 ? "此人气息深不可测 · " : ""}意图：下回合造成 ${e.damage} 点伤害${e.mechanic ? `<br>机制【${e.mechanic}】${e.mechanicText}` : ""}</div></section>
+    <section class="enemy"><div class="enemy-portrait portrait-${portrait} ${e.kind === "boss" ? "boss" : ""}" role="img" aria-label="${e.name}的水墨对手立绘"><span>${e.kind === "boss" ? "劫" : "敌"}</span></div><h1>${e.name}</h1><div class="hpbar"><i style="width:${clamp(e.hp / e.maxHp * 100, 0, 100)}%"></i></div><p>${e.hp} / ${e.maxHp}</p><div class="intent">${e.realmGap > 0 ? `越境压制 ${e.realmGap} 层：敌方生命与伤害提升<br>` : ""}${e.realmDiff >= 2 ? "此人气息深不可测 · " : ""}意图：下回合造成 ${e.damage} 点伤害${e.mechanic ? `<br>机制【${e.mechanic}】${e.mechanicText}` : ""}</div></section>
     <div class="battle-center"><p>${b.message}</p></div>
     <section class="hand">${b.hand.map((id, index) => {
       const card = getCard(id); const disabled = card.cost > b.energy || (card.mind || 0) > b.mind || (card.stones || 0) > state.stones;
@@ -645,19 +653,16 @@ function completeChapter() {
   if (state.chapter === CHAPTERS.length - 1 && state.realm >= 4) return endRun(ENDINGS.ascended.text, "飞升灵界", true);
   if (state.chapter < CHAPTERS.length - 1) {
     const nextChapter = CHAPTERS[state.chapter + 1];
-    if (state.realm < nextChapter.realm) {
-      state.mapRow = 0;
-      state.map = makeMap(state.chapter);
-      state.phase = "map";
-      log(`已破本幕劫关，但境界尚浅；至少达到${REALMS[nextChapter.realm].name}方可继续。`);
-      return;
-    }
     state.chapter += 1;
     state.mapRow = 0;
     state.map = makeMap(state.chapter);
     state.phase = "map";
     addTime(1 + state.chapter * .5);
-    log(`进入新篇章：${CHAPTERS[state.chapter].name}。`);
+    if (state.realm < nextChapter.realm) {
+      log(`越境进入新篇章：${nextChapter.name}。当前境界低于${REALMS[nextChapter.realm].name}，后续敌手将获得压制加成。`);
+    } else {
+      log(`进入新篇章：${nextChapter.name}。`);
+    }
   } else {
     state.phase = "map";
     state.mapRow = 0;
