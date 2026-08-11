@@ -15,7 +15,78 @@ const CHAPTER_REGIONS = [
   ["大晋", "昆吾山"],
   ["小极宫"],
 ];
-const ENEMY_PORTRAITS = ["mortal", "demonic", "sea", "ancient-demon", "silver-wing", "space"];
+const CHAPTER_FALLBACK_PORTRAITS = ["mortal", "demonic", "sea", "ancient-demon", "silver-wing", "space"];
+const CHAPTER_ENEMIES = [
+  [
+    { name: "七玄门叛徒", portrait: "qixuan-traitor" },
+    { name: "蒙面散修", portrait: "mortal" },
+    { name: "墨府刺客", portrait: "mo-estate-assassin" },
+  ],
+  [
+    { name: "鬼灵门修士", portrait: "ghost-spirit-cultivator" },
+    { name: "血灵门徒", portrait: "blood-spirit-disciple" },
+    { name: "魔道散修", portrait: "demonic" },
+  ],
+  [
+    { name: "深海妖兽", portrait: "deep-sea-beast" },
+    { name: "海渊蛇妖", portrait: "sea" },
+    { name: "外星海妖兽", portrait: "outer-sea-beast" },
+  ],
+  [
+    { name: "坠魔谷古兽", portrait: "demonfall-beast" },
+    { name: "古魔残影", portrait: "ancient-demon" },
+    { name: "魔气化身", portrait: "demonic-qi-avatar" },
+  ],
+  [
+    { name: "银翅夜叉", portrait: "silver-wing" },
+    { name: "昆吾夜妖", portrait: "kunwu-night-demon" },
+    { name: "阴罗宗护法", portrait: "yinluo-guardian" },
+  ],
+  [
+    { name: "空间异兽", portrait: "space" },
+    { name: "虚空兽影", portrait: "void-beast-shadow" },
+    { name: "界面风暴化身", portrait: "world-storm-avatar" },
+  ],
+];
+const CHAPTER_BOSSES = [
+  { name: "墨大夫", portrait: "doctor-mo" },
+  { name: "王蝉", portrait: "wang-chan" },
+  { name: "极阴祖师", portrait: "ancestor-jiyin" },
+  { name: "古魔", portrait: "ancient-demon-lord" },
+  { name: "元刹圣祖分身", portrait: "yuancha-avatar" },
+  { name: "空间风暴", portrait: "space-storm" },
+];
+const ENEMY_PORTRAIT_BY_NAME = Object.fromEntries(
+  [...CHAPTER_ENEMIES.flat(), ...CHAPTER_BOSSES].map((enemy) => [enemy.name, enemy.portrait]),
+);
+const MARKET_REGION_FACTORS = [1.08, 1, .92, 1.04, 1.16, 1.24];
+const MARKET_ITEMS = [
+  { id: "herb-pouch", name: "灵药包", detail: "灵药 +3，可用于炼丹。", basePrice: 7, rarity: "common", effect: { herbs: 3 } },
+  { id: "refining-ore", name: "赤铜灵材", detail: "灵材 +2，可用于炼器与阵法。", basePrice: 11, rarity: "common", effect: { materials: 2 } },
+  { id: "qi-pill", name: "定气丹", detail: "丹药 +1，用于破境。", basePrice: 15, rarity: "common", effect: { pill: 1 } },
+  { id: "route-slip", name: "探路玉简", detail: "情报 +2，提升稀有奇遇权重。", basePrice: 10, rarity: "common", effect: { intel: 2 } },
+  { id: "shadow-talisman", name: "遁影符", detail: "遁术积累 +2，提高后续逃遁机会。", basePrice: 13, rarity: "common", effect: { flee: 2 } },
+  { id: "healing-powder", name: "护脉散", detail: "立即恢复 12 点生命。", basePrice: 9, rarity: "common", effect: { hp: 12 } },
+  { id: "qi-notes", name: "炼气札记", detail: "修为 +10，适合低阶修士。", basePrice: 12, rarity: "common", effect: { cultivation: 10 } },
+  { id: "rough-flags", name: "粗制阵旗", detail: "灵材 +1、情报 +1。", basePrice: 8, rarity: "common", effect: { materials: 1, intel: 1 } },
+  { id: "beast-feed", name: "灵兽饲料", detail: "虫群或灵兽培育资源 +1。", basePrice: 9, rarity: "common", effect: { insect: 1 } },
+  { id: "safe-route-map", name: "商路舆图", detail: "谨慎 +2，标记附近安全路线。", basePrice: 8, rarity: "common", effect: { caution: 2 } },
+  { id: "spirit-herb-crate", name: "百年药匣", detail: "灵药 +6，乱星海商路特供。", basePrice: 24, rarity: "rare", minChapter: 2, regions: [2, 3], effect: { herbs: 6 } },
+  { id: "foundation-pill", name: "筑基丹", detail: "丹药 +2、修为 +8。", basePrice: 38, rarity: "rare", minChapter: 1, minRealm: 0, effect: { pill: 2, cultivation: 8 } },
+  { id: "nameless-scroll", name: "无名残卷", detail: "随机获得一张稀有功法牌。", basePrice: 34, rarity: "rare", minChapter: 1, effect: { card: "rare" } },
+  { id: "void-map", name: "虚天残图", detail: "情报 +3，并记录虚天殿路线。", basePrice: 46, rarity: "limited", minChapter: 2, regions: [2], effect: { intel: 3, flag: "market-void-map", technique: "虚天残图" } },
+  { id: "golden-bamboo-seed", name: "金雷竹种", detail: "获得可长期培育的金雷竹种。", basePrice: 58, rarity: "limited", minChapter: 3, effect: { herbs: 2, flag: "golden-bamboo-seed", relic: "金雷竹种" } },
+  { id: "ancient-soul-lamp", name: "古魂灯", detail: "获得古魂灯，神识 +1。", basePrice: 66, rarity: "limited", minChapter: 4, effect: { maxMind: 1, mind: 1, relic: "古魂灯" } },
+  { id: "space-crystal", name: "空间晶核", detail: "灵材 +8，并记录空间节点坐标。", basePrice: 78, rarity: "limited", minChapter: 5, regions: [5], effect: { materials: 8, flag: "space-node-chart" } },
+  { id: "blood-spider-egg", name: "血玉蛛卵", detail: "虫群 +1，开启血玉蜘蛛因果。", basePrice: 45, rarity: "black", minChapter: 2, effect: { insect: 1, wanted: 1, flag: "blood-jade-spider" } },
+  { id: "stolen-array", name: "无主阵盘", detail: "灵材 +5，但会增加追索。", basePrice: 31, rarity: "black", minChapter: 1, effect: { materials: 5, wanted: 1 } },
+  { id: "forbidden-manual", name: "禁术手札", detail: "获得稀有秘术牌，追索 +2。", basePrice: 52, rarity: "black", minChapter: 4, effect: { card: "rare", wanted: 2 } },
+];
+const MARKET_SELLABLES = [
+  { key: "herbs", name: "灵药", basePrice: 3 },
+  { key: "pill", name: "丹药", basePrice: 8 },
+  { key: "materials", name: "灵材", basePrice: 5 },
+];
 let state = null;
 let modal = null;
 let toastTimer = 0;
@@ -89,6 +160,9 @@ function defaultState() {
     currentEvent: "normal-1",
     recentEvents: [],
     recentFamilies: [],
+    recentMarketItems: [],
+    marketRep: 0,
+    market: null,
     outcome: null,
     log: ["离开青牛镇，踏上七玄门的山路。"],
     mapRow: 0,
@@ -168,8 +242,49 @@ function breakthroughChance() {
   return Math.round(clamp(62 + state.intel * 1.3 + state.caution * .7 - state.realm * 7 - state.stage * 3.5 - hard, 22, 84));
 }
 
-function chapterRealmGap(chapter = state.chapter) {
-  return Math.max(0, CHAPTERS[chapter].realm - state.realm);
+function combatPressure(kind, chapter = state.chapter) {
+  const targetRealm = CHAPTERS[chapter].realm;
+  const maxStage = REALMS[targetRealm].stages.length - 1;
+  const targetStage = kind === "boss" ? Math.min(2, maxStage) : kind === "elite" ? Math.min(1, maxStage) : 0;
+  const realmDelta = targetRealm - state.realm;
+  const stageDelta = realmDelta === 0 ? targetStage - state.stage : 0;
+  const enemyDamageScale = clamp((4 ** realmDelta) * (1.55 ** stageDelta), .06, 64);
+  const playerDamageScale = clamp(1 / enemyDamageScale, .02, 20);
+  const enemyHpScale = clamp((2.2 ** realmDelta) * (1.3 ** stageDelta), .16, 24);
+  const enemyRealmText = `${REALMS[targetRealm].name} · ${REALMS[targetRealm].stages[targetStage]}`;
+  let pressureText = "境界相当，伤害不受压制";
+  if (realmDelta > 0) pressureText = `相差 ${realmDelta} 个大境界：敌方伤害 ×${enemyDamageScale.toFixed(1)}，你的伤害仅 ${Math.round(playerDamageScale * 100)}%`;
+  else if (realmDelta < 0) pressureText = `你高出 ${Math.abs(realmDelta)} 个大境界：你的伤害 ×${playerDamageScale.toFixed(1)}，敌方伤害仅 ${Math.round(enemyDamageScale * 100)}%`;
+  else if (stageDelta > 0) pressureText = `相差 ${stageDelta} 个小层次：敌方伤害 ×${enemyDamageScale.toFixed(1)}，你的伤害仅 ${Math.round(playerDamageScale * 100)}%`;
+  else if (stageDelta < 0) pressureText = `你高出 ${Math.abs(stageDelta)} 个小层次：你的伤害 ×${playerDamageScale.toFixed(1)}`;
+  return { targetRealm, targetStage, realmDelta, stageDelta, enemyDamageScale, playerDamageScale, enemyHpScale, enemyRealmText, pressureText };
+}
+
+function balancedEnemyStats(kind) {
+  const pressure = combatPressure(kind);
+  const kindHp = kind === "boss" ? 2.15 : kind === "elite" ? 1.45 : 1;
+  const kindDamage = kind === "boss" ? 1.35 : kind === "elite" ? 1.2 : 1;
+  const maxHp = Math.round((26 + pressure.targetRealm * 32 + state.chapter * 8) * kindHp * pressure.enemyHpScale);
+  const damage = Math.max(1, Math.round((5 + pressure.targetRealm * 6 + state.chapter * 1.5) * kindDamage * pressure.enemyDamageScale));
+  return { ...pressure, maxHp, damage };
+}
+
+function rebalanceEnemy(enemy, preserveRatio = false) {
+  const stats = balancedEnemyStats(enemy.kind);
+  const ratio = preserveRatio && enemy.maxHp ? clamp(enemy.hp / enemy.maxHp, 0, 1) : 1;
+  enemy.maxHp = stats.maxHp;
+  enemy.hp = Math.max(1, Math.round(stats.maxHp * ratio));
+  enemy.damage = stats.damage;
+  enemy.realmGap = Math.max(0, stats.realmDelta);
+  enemy.realmDiff = Math.max(0, stats.realmDelta) + (enemy.kind === "elite" || enemy.kind === "boss" ? 1 : 0);
+  enemy.realmDelta = stats.realmDelta;
+  enemy.stageDelta = stats.stageDelta;
+  enemy.enemyDamageScale = stats.enemyDamageScale;
+  enemy.playerDamageScale = stats.playerDamageScale;
+  enemy.enemyRealmText = stats.enemyRealmText;
+  enemy.pressureText = stats.pressureText;
+  enemy.balanceVersion = 2;
+  return enemy;
 }
 
 function requirementMet(requirement = {}) {
@@ -226,9 +341,12 @@ function selectEvent(kind = "event") {
   const chainPool = eligibleEvents(corpus.chains);
   if (chainPool.length && Math.random() < 0.16) pool = chainPool;
   const eligible = eligibleEvents(pool);
-  const unseenFamilies = eligible.filter((event) => !state.recentFamilies.includes(event.family));
-  const relaxedFamilies = eligible.filter((event) => !state.recentFamilies.slice(0, 5).includes(event.family));
-  const event = chooseWeighted(unseenFamilies.length ? unseenFamilies : relaxedFamilies.length ? relaxedFamilies : eligible);
+  const cooled = eligible.filter((event) => !state.recentEvents.slice(0, 18).includes(event.id));
+  const shortCooled = eligible.filter((event) => !state.recentEvents.slice(0, 6).includes(event.id));
+  const candidates = cooled.length ? cooled : shortCooled.length ? shortCooled : eligible;
+  const unseenFamilies = candidates.filter((event) => !state.recentFamilies.includes(event.family));
+  const relaxedFamilies = candidates.filter((event) => !state.recentFamilies.slice(0, 5).includes(event.family));
+  const event = chooseWeighted(unseenFamilies.length ? unseenFamilies : relaxedFamilies.length ? relaxedFamilies : candidates);
   state.currentEvent = event.id;
   state.recentEvents = [event.id, ...state.recentEvents.filter((id) => id !== event.id)].slice(0, 30);
   state.recentFamilies = [event.family, ...state.recentFamilies.filter((family) => family !== event.family)].slice(0, 12);
@@ -352,18 +470,47 @@ function renderMap() {
     </div></section>`;
 }
 
+function renderMarket() {
+  const inventory = state.market?.inventory || [];
+  const blackUnlocked = state.intel >= 3 || state.wanted >= 1 || state.marketRep >= 3;
+  const rarityLabel = { common: "常备", rare: "稀有", limited: "限时", black: "黑市" };
+  return `
+    <section class="scene panel market-scene"><div class="market-content">
+      <div class="market-heading">
+        <div><span class="location">${CHAPTERS[state.chapter].location} · 坊市交易</span><h1 class="event-title">${state.chapter === 2 ? "魁星岛海市" : state.chapter >= 4 ? "大晋秘市" : "修士坊市"}</h1><p class="event-text">货物受区域、境界与坊市声望影响。买卖都会改变灵石与声望，刷新后不会立刻出现同一批货。</p></div>
+        <div class="market-wallet"><span>灵石 <b>${state.stones}</b></span><span>坊市声望 <b>${state.marketRep || 0}</b></span><span>区域价差 <b>${Math.round((MARKET_REGION_FACTORS[state.chapter] - 1) * 100)}%</b></span></div>
+      </div>
+      <div class="market-actions"><button class="ink-btn primary" data-market-refresh ${state.stones < marketRefreshCost() ? "disabled" : ""}>刷新货单 · ${marketRefreshCost()} 灵石</button><button class="ink-btn" data-action="map">离开坊市</button></div>
+      <div class="market-layout">
+        <section><h2 class="market-title">今日货单 <small>${blackUnlocked ? "黑市通道已开启" : "情报 3 / 追索 1 / 声望 3 可开启黑市"}</small></h2>
+          <div class="market-grid">${inventory.map((slot) => {
+            const item = MARKET_ITEMS.find((entry) => entry.id === slot.id);
+            if (!item) return "";
+            const blackLocked = item.rarity === "black" && !blackUnlocked;
+            const disabled = slot.stock < 1 || state.stones < slot.price || blackLocked;
+            return `<article class="market-card ${item.rarity}"><div class="market-card-top"><span class="rarity">${rarityLabel[item.rarity]}</span><span>余 ${slot.stock}</span></div><h3>${item.name}</h3><p>${item.detail}</p><button class="ink-btn" data-market-buy="${item.id}" ${disabled ? "disabled" : ""}>${slot.stock < 1 ? "售罄" : blackLocked ? "黑市未开启" : `${slot.price} 灵石 · 买入`}</button></article>`;
+          }).join("")}</div>
+        </section>
+        <section><h2 class="market-title">寄售回收 <small>每次出售 1 份</small></h2>
+          <div class="sell-list">${MARKET_SELLABLES.map((item) => `<article><div><strong>${item.name}</strong><small>持有 ${state[item.key] || 0}</small></div><button class="ink-btn" data-market-sell="${item.key}" ${(state[item.key] || 0) < 1 ? "disabled" : ""}>卖出 · ${marketSellPrice(item)} 灵石</button></article>`).join("")}</div>
+        </section>
+      </div>
+    </div></section>`;
+}
+
 function renderBottomNav() {
   const items = [["牌", "卡组", "deck"], ["囊", "背包", "bag"], ["宝", "法宝", "relics"], ["诀", "功法", "techniques"], ["兽", "灵兽", "beasts"], ["人", "人物", "people"], ["府", "洞府", "cave"]];
   return `<nav class="bottom-nav"><div class="nav-inner">${items.map(([icon, label, action]) => `<button class="nav-btn" data-modal="${action}"><b>${icon}</b>${label}</button>`).join("")}</div></nav>`;
 }
 
 function renderGame() {
-  app.innerHTML = `<div class="game-shell paper-noise">${renderTopbar()}<div class="main-grid">${renderLeftRail()}${state.phase === "map" ? renderMap() : renderEvent()}${renderRightRail()}</div>${renderBottomNav()}</div>${renderModal()}`;
+  const center = state.phase === "map" ? renderMap() : state.phase === "market" ? renderMarket() : renderEvent();
+  app.innerHTML = `<div class="game-shell paper-noise">${renderTopbar()}<div class="main-grid">${renderLeftRail()}${center}${renderRightRail()}</div>${renderBottomNav()}</div>${renderModal()}`;
   bindActions();
 }
 
 function labelFor(key) {
-  return ({ stones: "灵石", intel: "情报", green: "绿液", insect: "虫群", mind: "神识", pill: "丹药", materials: "灵材", herbs: "灵药", relation: "人情", wanted: "追索" })[key] || key;
+  return ({ stones: "灵石", hp: "生命", cultivation: "修为", intel: "情报", caution: "谨慎", green: "绿液", insect: "虫群", mind: "神识", maxMind: "神识上限", pill: "丹药", materials: "灵材", herbs: "灵药", relation: "人情", wanted: "追索", flee: "遁术" })[key] || key;
 }
 
 function applyEffects(effects = {}) {
@@ -425,13 +572,130 @@ function visitNode(id) {
   selectEvent();
 }
 
+function marketItemAvailable(item) {
+  if ((item.minChapter ?? 0) > state.chapter) return false;
+  if ((item.minRealm ?? 0) > state.realm) return false;
+  if (item.regions && !item.regions.includes(state.chapter)) return false;
+  if (item.effect?.flag && state.flags?.[item.effect.flag]) return false;
+  if (item.effect?.relic && state.relics.includes(item.effect.relic)) return false;
+  if (item.effect?.technique && state.techniques.includes(item.effect.technique)) return false;
+  return true;
+}
+
+function marketPrice(item) {
+  const region = MARKET_REGION_FACTORS[state.chapter] || 1;
+  const realmMarkup = 1 + state.realm * .1;
+  const reputationDiscount = 1 - Math.min(12, state.marketRep || 0) * .018;
+  const blackMarkup = item.rarity === "black" ? 1.18 : 1;
+  const variance = .9 + Math.random() * .2;
+  return Math.max(2, Math.round(item.basePrice * region * realmMarkup * reputationDiscount * blackMarkup * variance));
+}
+
+function marketSellPrice(item) {
+  const regionDemand = .82 + state.chapter * .06;
+  const reputationBonus = 1 + Math.min(12, state.marketRep || 0) * .025;
+  return Math.max(1, Math.round(item.basePrice * regionDemand * reputationBonus));
+}
+
+function marketRefreshCost() {
+  return 3 + state.realm * 2 + (state.market?.refreshes || 0) * 2;
+}
+
+function buildMarketInventory() {
+  const available = MARKET_ITEMS.filter(marketItemAvailable);
+  const recent = state.recentMarketItems || [];
+  let pool = available.filter((item) => !recent.slice(0, 12).includes(item.id));
+  if (pool.length < 5) pool = available.filter((item) => !recent.slice(0, 5).includes(item.id));
+  if (pool.length < 5) pool = available;
+  const shuffled = shuffle(pool);
+  const chosen = [];
+  const take = (rarity, count) => {
+    shuffled.filter((item) => item.rarity === rarity && !chosen.includes(item)).slice(0, count).forEach((item) => chosen.push(item));
+  };
+  take("common", 3);
+  take("rare", 1);
+  take("limited", 1);
+  take("black", 1);
+  shuffled.filter((item) => !chosen.includes(item)).slice(0, 6 - chosen.length).forEach((item) => chosen.push(item));
+  state.recentMarketItems = [...chosen.map((item) => item.id), ...recent.filter((id) => !chosen.some((item) => item.id === id))].slice(0, 18);
+  return chosen.map((item) => ({ id: item.id, price: marketPrice(item), stock: item.rarity === "common" ? 2 : 1 }));
+}
+
 function marketEvent() {
-  state.currentEvent = "normal-2";
-  const event = currentEvent();
-  event.region = CHAPTERS[state.chapter].location;
-  state.phase = "event";
+  state.phase = "market";
   state.outcome = null;
+  state.market = { inventory: buildMarketInventory(), refreshes: 0 };
+  log(`抵达${CHAPTERS[state.chapter].location}坊市，货单与上次不同。`);
   save();
+  render();
+}
+
+function applyMarketItem(item) {
+  const messages = [];
+  for (const [key, raw] of Object.entries(item.effect || {})) {
+    if (key === "card") {
+      const choices = CARDS.filter((card) => raw !== "rare" || ["法宝", "阵法", "秘术"].includes(card.type));
+      const card = pick(choices.length ? choices : CARDS);
+      state.deck.push(card.id);
+      messages.push(`获得【${card.name}】`);
+    } else if (key === "flag") {
+      state.flags[raw] = true;
+      messages.push("后续因果已开启");
+    } else if (key === "relic") {
+      if (!state.relics.includes(raw)) state.relics.push(raw);
+      messages.push(`获得【${raw}】`);
+    } else if (key === "technique") {
+      if (!state.techniques.includes(raw)) state.techniques.push(raw);
+      messages.push(`记录【${raw}】`);
+    } else {
+      state[key] = Number(state[key] || 0) + raw;
+      if (key === "hp") state.hp = clamp(state.hp, 0, state.maxHp);
+      if (key === "mind") state.mind = clamp(state.mind, 0, state.maxMind);
+      messages.push(`${labelFor(key)} ${raw > 0 ? "+" : ""}${raw}`);
+    }
+  }
+  return messages.join(" · ");
+}
+
+function buyMarketItem(id) {
+  const slot = state.market?.inventory.find((entry) => entry.id === id);
+  const item = MARKET_ITEMS.find((entry) => entry.id === id);
+  if (!slot || !item || slot.stock < 1) return showToast("此物已经售罄");
+  const blackUnlocked = state.intel >= 3 || state.wanted >= 1 || state.marketRep >= 3;
+  if (item.rarity === "black" && !blackUnlocked) return showToast("黑市只认情报、追索或坊市声望");
+  if (state.stones < slot.price) return showToast("灵石不足");
+  state.stones -= slot.price;
+  slot.stock -= 1;
+  state.marketRep = Math.min(12, (state.marketRep || 0) + 1);
+  const result = applyMarketItem(item);
+  log(`坊市购得【${item.name}】，花费灵石 ${slot.price}。${result}`);
+  save();
+  showToast(`购得 ${item.name}`);
+  render();
+}
+
+function sellMarketItem(key) {
+  const item = MARKET_SELLABLES.find((entry) => entry.key === key);
+  if (!item || Number(state[key] || 0) < 1) return showToast("没有可出售的物品");
+  const price = marketSellPrice(item);
+  state[key] -= 1;
+  state.stones += price;
+  state.marketRep = Math.min(12, (state.marketRep || 0) + 1);
+  log(`坊市售出一份${item.name}，获得灵石 ${price}。`);
+  save();
+  showToast(`售出 ${item.name}`);
+  render();
+}
+
+function refreshMarket() {
+  const cost = marketRefreshCost();
+  if (state.stones < cost) return showToast("刷新货单所需灵石不足");
+  state.stones -= cost;
+  state.market.refreshes += 1;
+  state.market.inventory = buildMarketInventory();
+  log(`向牙行支付灵石 ${cost}，换得一批新货。`);
+  save();
+  showToast("货单已刷新");
   render();
 }
 
@@ -443,20 +707,7 @@ function caveEvent() {
 }
 
 function enemyFor(kind) {
-  const names = [
-    ["七玄门叛徒", "蒙面散修", "墨府刺客"],
-    ["鬼灵门修士", "血灵门徒", "魔道散修"],
-    ["深海妖兽", "海渊蛇妖", "外星海妖兽"],
-    ["坠魔谷古兽", "古魔残影", "魔气化身"],
-    ["银翅夜叉", "昆吾夜妖", "阴罗宗护法"],
-    ["空间异兽", "虚空兽影", "界面风暴化身"],
-  ];
-  const mult = kind === "boss" ? 2.15 : kind === "elite" ? 1.45 : 1;
-  const realmGap = chapterRealmGap();
-  const pressureHp = 1 + realmGap * .22;
-  const pressureDamage = 1 + realmGap * .18;
-  const maxHp = Math.round((26 + state.realm * 26 + state.chapter * 8) * mult * pressureHp);
-  const chapterBosses = ["墨大夫", "王蝉", "极阴祖师", "古魔", "元刹圣祖分身", "空间风暴"];
+  const enemy = kind === "boss" ? CHAPTER_BOSSES[state.chapter] : pick(CHAPTER_ENEMIES[state.chapter]);
   const mechanics = [
     ["夺舍", "每 3 回合侵蚀 1 点神识；神识归零时伤害大增。"],
     ["血灵大法", "造成生命伤害后，会回复部分生命。"],
@@ -465,20 +716,15 @@ function enemyFor(kind) {
     ["封印三相", "生命越低，攻击次数越多。"],
     ["空间裂缝", "每 3 回合造成无视护盾的空间撕裂。"],
   ];
-  return {
-    name: kind === "boss" ? chapterBosses[state.chapter] : pick(names[state.chapter]),
-    hp: maxHp,
-    maxHp,
-    damage: Math.round((5 + state.realm * 4 + state.chapter * 1.4) * (kind === "elite" ? 1.25 : 1) * pressureDamage),
+  return rebalanceEnemy({
+    name: enemy.name,
     kind,
-    portrait: ENEMY_PORTRAITS[state.chapter],
+    portrait: enemy.portrait,
     turn: 1,
     intent: "attack",
-    realmGap,
-    realmDiff: realmGap + (kind === "elite" || kind === "boss" ? 1 : 0),
     mechanic: kind === "boss" ? mechanics[state.chapter][0] : null,
     mechanicText: kind === "boss" ? mechanics[state.chapter][1] : null,
-  };
+  });
 }
 
 function startBattle(kind = "normal") {
@@ -520,10 +766,11 @@ function drawCards(count) {
 function renderBattle() {
   const b = state.battle;
   const e = b.enemy;
-  const portrait = e.portrait || ENEMY_PORTRAITS[state.chapter];
+  if (e.balanceVersion !== 2) rebalanceEnemy(e, true);
+  const portrait = ENEMY_PORTRAIT_BY_NAME[e.name] || e.portrait || CHAPTER_FALLBACK_PORTRAITS[state.chapter];
   app.innerHTML = `<main class="battle paper-noise">
     <div class="battle-head"><div><p class="location">${CHAPTERS[state.chapter].location} · ${e.kind === "boss" ? "劫关" : "斗法"}</p><h2>${realmText()}</h2></div><button class="ink-btn" data-action="flee">尝试逃遁</button></div>
-    <section class="enemy"><div class="enemy-portrait portrait-${portrait} ${e.kind === "boss" ? "boss" : ""}" role="img" aria-label="${e.name}的水墨对手立绘"><span>${e.kind === "boss" ? "劫" : "敌"}</span></div><h1>${e.name}</h1><div class="hpbar"><i style="width:${clamp(e.hp / e.maxHp * 100, 0, 100)}%"></i></div><p>${e.hp} / ${e.maxHp}</p><div class="intent">${e.realmGap > 0 ? `越境压制 ${e.realmGap} 层：敌方生命与伤害提升<br>` : ""}${e.realmDiff >= 2 ? "此人气息深不可测 · " : ""}意图：下回合造成 ${e.damage} 点伤害${e.mechanic ? `<br>机制【${e.mechanic}】${e.mechanicText}` : ""}</div></section>
+    <section class="enemy"><div class="enemy-portrait portrait-${portrait} ${e.kind === "boss" ? "boss" : ""}" role="img" aria-label="${e.name}的水墨对手立绘"><span>${e.kind === "boss" ? "劫" : "敌"}</span></div><h1>${e.name}</h1><p class="enemy-realm">对手境界：${e.enemyRealmText}</p><div class="realm-pressure ${e.realmDelta > 0 || e.stageDelta > 0 ? "danger" : e.realmDelta < 0 || e.stageDelta < 0 ? "advantage" : ""}">${e.realmDelta > 0 ? "此人气息深不可测 · " : ""}${e.pressureText}</div><div class="hpbar"><i style="width:${clamp(e.hp / e.maxHp * 100, 0, 100)}%"></i></div><p>${e.hp} / ${e.maxHp}</p><div class="intent">意图：下回合造成 ${e.damage} 点伤害${e.mechanic ? `<br>机制【${e.mechanic}】${e.mechanicText}` : ""}</div></section>
     <div class="battle-center"><p>${b.message}</p></div>
     <section class="hand">${b.hand.map((id, index) => {
       const card = getCard(id); const disabled = card.cost > b.energy || (card.mind || 0) > b.mind || (card.stones || 0) > state.stones;
@@ -542,8 +789,9 @@ function playCard(index) {
   b.energy -= card.cost;
   b.mind -= card.mind || 0;
   state.stones -= card.stones || 0;
-  let damage = (card.damage || 0) * (card.multi || 1);
-  if (card.tags?.includes("剑诀") && state.talents.some((t) => t.effect === "sword")) damage += 3;
+  let rawDamage = (card.damage || 0) * (card.multi || 1);
+  if (card.tags?.includes("剑诀") && state.talents.some((t) => t.effect === "sword")) rawDamage += 3;
+  const damage = rawDamage ? Math.max(1, Math.round(rawDamage * (b.enemy.playerDamageScale || 1))) : 0;
   b.enemy.hp -= damage;
   b.block += card.block || 0;
   b.energy += card.energy || 0;
@@ -552,7 +800,8 @@ function playCard(index) {
   b.nextEnergy += card.nextEnergy || 0;
   if (card.heal) b.playerHp = clamp(b.playerHp + card.heal, 0, state.maxHp);
   if (card.cultivation) state.cultivation += card.cultivation;
-  b.message = `你施展【${card.name}】${damage ? `，造成 ${damage} 点伤害` : ""}${card.block ? `，护盾增加 ${card.block}` : ""}。`;
+  const pressureNote = damage && Math.abs((b.enemy.playerDamageScale || 1) - 1) > .05 ? `（境界修正 ×${(b.enemy.playerDamageScale || 1).toFixed(2)}）` : "";
+  b.message = `你施展【${card.name}】${damage ? `，造成 ${damage} 点伤害${pressureNote}` : ""}${card.block ? `，护盾增加 ${card.block}` : ""}。`;
   b.hand.splice(index, 1);
   if (!card.exhaust) b.discard.push(id);
   if (b.enemy.hp <= 0) return winBattle();
@@ -563,14 +812,16 @@ function playCard(index) {
 function enemyAttack() {
   const b = state.battle;
   const chapter = state.chapter;
-  const phaseBonus = b.enemy.kind === "boss" && chapter === 4 && b.enemy.hp < b.enemy.maxHp * .34 ? 6 : 0;
+  const enemyScale = b.enemy.enemyDamageScale || 1;
+  const playerScale = b.enemy.playerDamageScale || 1;
+  const phaseBonus = b.enemy.kind === "boss" && chapter === 4 && b.enemy.hp < b.enemy.maxHp * .34 ? Math.round(6 * enemyScale) : 0;
   const hit = Math.max(0, b.enemy.damage + phaseBonus - b.block);
   b.playerHp -= hit;
-  if (b.thorns) b.enemy.hp -= b.thorns;
+  if (b.thorns) b.enemy.hp -= Math.max(1, Math.round(b.thorns * playerScale));
   b.message = b.block >= b.enemy.damage + phaseBonus ? "护体灵光挡住了这一击。" : `${b.enemy.name}出手，你受到 ${hit} 点伤害。`;
   if (b.enemy.kind === "boss" && chapter === 0 && b.turn % 3 === 0) {
     b.mind = Math.max(0, b.mind - 1);
-    if (b.mind === 0) b.playerHp -= 8;
+    if (b.mind === 0) b.playerHp -= Math.max(1, Math.round(8 * enemyScale));
     b.message += " 墨大夫的神识侵入识海。";
   }
   if (b.enemy.kind === "boss" && chapter === 1 && hit > 0) {
@@ -587,7 +838,7 @@ function enemyAttack() {
     b.message += " 魔气侵入经脉。";
   }
   if (b.enemy.kind === "boss" && chapter === 5 && b.turn % 3 === 0) {
-    b.playerHp -= 7;
+    b.playerHp -= Math.max(1, Math.round(7 * enemyScale));
     b.message += " 空间裂缝无视护盾，撕裂肉身。";
   }
   b.block = 0;
@@ -608,7 +859,7 @@ function attemptFlee() {
   const b = state.battle;
   const talent = state.talents.some((t) => t.effect === "flee") ? 18 : 0;
   const penalty = b.enemy.kind === "boss" ? 30 : b.enemy.realmDiff * 15;
-  const chance = clamp(42 + talent + state.caution * 2 + b.fleeBonus - penalty, 8, 100);
+  const chance = clamp(42 + talent + state.caution * 2 + state.flee * 2 + b.fleeBonus - penalty, 8, 100);
   if (Math.random() * 100 <= chance) {
     state.escapes += 1;
     state.flee += 1;
@@ -798,7 +1049,7 @@ function bindActions() {
     if (action === "map") { state.phase = "map"; state.outcome = null; save(); render(); }
     if (action === "flee") attemptFlee();
     if (action === "end-turn") enemyAttack();
-    if (action === "close-modal") { modal = null; state ? render() : renderLanding(); }
+    if (action === "close-modal") { modal = null; if (state) render(); else renderLanding(); }
     if (action === "breakthrough") breakthrough();
     if (action === "export") exportSave();
     if (action === "import") importSave();
@@ -807,6 +1058,9 @@ function bindActions() {
   app.querySelectorAll("[data-choice]").forEach((el) => el.addEventListener("click", () => resolveChoice(Number(el.dataset.choice))));
   app.querySelectorAll("[data-node]").forEach((el) => el.addEventListener("click", () => visitNode(el.dataset.node)));
   app.querySelectorAll("[data-card]").forEach((el) => el.addEventListener("click", () => playCard(Number(el.dataset.card))));
+  app.querySelectorAll("[data-market-buy]").forEach((el) => el.addEventListener("click", () => buyMarketItem(el.dataset.marketBuy)));
+  app.querySelectorAll("[data-market-sell]").forEach((el) => el.addEventListener("click", () => sellMarketItem(el.dataset.marketSell)));
+  app.querySelectorAll("[data-market-refresh]").forEach((el) => el.addEventListener("click", refreshMarket));
   app.querySelectorAll("[data-modal]").forEach((el) => el.addEventListener("click", () => { modal = el.dataset.modal; render(); }));
   app.querySelectorAll("[data-cave]").forEach((el) => el.addEventListener("click", () => caveAction(el.dataset.cave)));
 }
